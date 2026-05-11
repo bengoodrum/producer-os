@@ -35,7 +35,7 @@ Place exported images under `docs/` and link them here.
 
 | View | File |
 | ---- | ---- |
-| Main dashboard (placeholder) | [`docs/dashboard.svg`](docs/dashboard.svg) |
+| Main dashboard (placeholder) | ![ProducerOS Dashboard](docs/dashboard.png) |
 
 **Tip:** With an empty library, open [http://localhost:3000/?screenshot=1](http://localhost:3000/?screenshot=1) and the app will expand the **sample layout** block—good for a full-width capture without adding fake data to storage. You can also use **Show sample layout** in the empty state at any time.
 
