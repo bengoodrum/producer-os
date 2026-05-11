@@ -2,11 +2,15 @@
 
 import {
   Activity,
+  ArrowRight,
+  Camera,
   CheckCircle2,
   Circle,
   Disc3,
   Filter,
   Headphones,
+  Inbox,
+  LayoutGrid,
   Music2,
   Plus,
   Sparkles,
@@ -18,6 +22,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -114,7 +119,8 @@ function isValidTrack(x: unknown): x is Track {
   );
 }
 
-const DEMO_TRACKS: Track[] = [
+/** Richer set for “Load demo tracks” and screenshot-friendly density */
+const LOAD_DEMO_TRACKS: Track[] = [
   {
     id: "demo-1",
     title: "Neon Afterglow",
@@ -142,6 +148,87 @@ const DEMO_TRACKS: Track[] = [
       done: ["c1", "c2", "c3"].includes(c.id),
     })),
   },
+  {
+    id: "demo-3",
+    title: "Glassline (VIP)",
+    bpm: 174,
+    key: "G#m",
+    genre: "DnB",
+    status: "Mastering",
+    priority: "Low",
+    nextStep: "Loudness pass vs reference — leave 1 dB headroom",
+    notes: "VIP drops at 2:08 — keep hats mono-compatible.",
+    checklist: DEFAULT_CHECKLIST.map((c) => ({ ...c, done: c.id === "c1" })),
+  },
+  {
+    id: "demo-4",
+    title: "Lobby FM",
+    bpm: 85,
+    key: "Bb",
+    genre: "Lo-fi",
+    status: "Released",
+    priority: "Medium",
+    nextStep: "Post-mortem: bounce stems for remix pack",
+    notes: "Released 04/01 — add to catalog sheet.",
+    checklist: DEFAULT_CHECKLIST.map((c) => ({ ...c, done: true })),
+  },
+];
+
+const DEMO_TRACKS: Track[] = LOAD_DEMO_TRACKS.slice(0, 2);
+
+type SampleRow = {
+  title: string;
+  bpm: number;
+  key: string;
+  genre: string;
+  status: Status;
+  priority: Priority;
+  nextStep: string;
+  checklistPreview: { done: boolean; label: string }[];
+};
+
+const SAMPLE_DASHBOARD_ROWS: SampleRow[] = [
+  {
+    title: "Midnight Relay",
+    bpm: 118,
+    key: "Dm",
+    genre: "Electronica",
+    status: "Mixing",
+    priority: "High",
+    nextStep: "Glue bus + vocal de-esser pass",
+    checklistPreview: [
+      { done: true, label: "Final master locked" },
+      { done: false, label: "Artwork & branding ready" },
+      { done: false, label: "DSP metadata complete" },
+    ],
+  },
+  {
+    title: "Velvet Runner",
+    bpm: 124,
+    key: "F#",
+    genre: "Disco house",
+    status: "Ready",
+    priority: "Medium",
+    nextStep: "Schedule distro upload — Tuesday",
+    checklistPreview: [
+      { done: true, label: "Final master locked" },
+      { done: true, label: "Artwork & branding ready" },
+      { done: false, label: "Release day promo queued" },
+    ],
+  },
+  {
+    title: "Static Bloom",
+    bpm: 72,
+    key: "Em",
+    genre: "Ambient",
+    status: "Idea",
+    priority: "Low",
+    nextStep: "Capture 8-bar motif — phone memo → DAW",
+    checklistPreview: [
+      { done: false, label: "Final master locked" },
+      { done: false, label: "Credits / splits documented" },
+    ],
+  },
 ];
 
 export default function Home() {
@@ -149,6 +236,8 @@ export default function Home() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [filter, setFilter] = useState<FilterId>("all");
   const [form, setForm] = useState(emptyForm);
+  const [showSampleLayout, setShowSampleLayout] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     startTransition(() => {
@@ -184,6 +273,18 @@ export default function Home() {
       return true;
     });
   }, [tracks, filter]);
+
+  const filterEmpty = hydrated && filtered.length === 0;
+  const libraryEmpty = hydrated && tracks.length === 0;
+
+  useEffect(() => {
+    if (!hydrated || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("screenshot")) return;
+    if (tracks.length === 0 || filtered.length === 0) {
+      startTransition(() => setShowSampleLayout(true));
+    }
+  }, [hydrated, tracks.length, filtered.length]);
 
   const addTrack = useCallback(
     (e: React.FormEvent) => {
@@ -228,6 +329,18 @@ export default function Home() {
         };
       })
     );
+  }, []);
+
+  const loadDemoTracks = useCallback(() => {
+    setTracks(
+      LOAD_DEMO_TRACKS.map((t) => ({
+        ...t,
+        id: newId(),
+        checklist: t.checklist.map((c) => ({ ...c, id: newId() })),
+      }))
+    );
+    setFilter("all");
+    setShowSampleLayout(false);
   }, []);
 
   const filterTabs: { id: FilterId; label: string }[] = [
@@ -323,6 +436,8 @@ export default function Home() {
             >
               <Field label="Title" required>
                 <input
+                  ref={titleInputRef}
+                  id="produceros-new-track-title"
                   className="w-full rounded-xl border border-white/10 bg-zinc-950/60 px-3 py-2 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-500 focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20"
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
@@ -450,13 +565,108 @@ export default function Home() {
             </div>
 
             {!hydrated ? (
-              <p className="rounded-2xl border border-white/10 bg-zinc-900/40 px-4 py-12 text-center text-sm text-zinc-500">
-                Loading your studio…
-              </p>
-            ) : filtered.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-white/15 bg-zinc-900/30 px-4 py-12 text-center text-sm text-zinc-500">
-                No tracks match this filter. Add a track or switch filters.
-              </p>
+              <div className="space-y-3 rounded-2xl border border-white/10 bg-zinc-900/40 p-8">
+                <div className="mx-auto h-2 max-w-xs animate-pulse rounded-full bg-white/10" />
+                <div className="mx-auto h-2 max-w-sm animate-pulse rounded-full bg-white/5" />
+                <div className="mx-auto h-2 max-w-[14rem] animate-pulse rounded-full bg-white/5" />
+                <p className="pt-4 text-center text-sm text-zinc-500">Loading your studio…</p>
+              </div>
+            ) : filterEmpty ? (
+              <div className="space-y-6">
+                {libraryEmpty ? (
+                  <div className="overflow-hidden rounded-2xl border border-dashed border-violet-500/25 bg-gradient-to-br from-violet-950/40 via-zinc-900/50 to-zinc-950/80 p-8 sm:p-10">
+                    <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="flex gap-4">
+                        <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-violet-500/30 bg-violet-500/15 text-violet-200">
+                          <Inbox className="size-7" aria-hidden />
+                        </div>
+                        <div className="space-y-2">
+                          <h3 className="text-lg font-semibold text-white">
+                            Library is empty
+                          </h3>
+                          <p className="max-w-md text-sm leading-relaxed text-zinc-400">
+                            Add your first track with the form on the left, or load demo
+                            data to explore filters and checklists. Nothing is sent to a
+                            server—everything stays in this browser.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => titleInputRef.current?.focus()}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-100"
+                      >
+                        Start a track
+                        <ArrowRight className="size-4" aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={loadDemoTracks}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-medium text-zinc-200 transition hover:bg-white/10"
+                      >
+                        <LayoutGrid className="size-4" aria-hidden />
+                        Load demo tracks
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowSampleLayout((v) => !v)}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-3 text-sm font-medium text-violet-200 transition hover:bg-violet-500/20"
+                      >
+                        <Camera className="size-4" aria-hidden />
+                        {showSampleLayout ? "Hide sample layout" : "Show sample layout"}
+                      </button>
+                    </div>
+                    <p className="mt-6 text-xs text-zinc-500">
+                      Tip: append{" "}
+                      <code className="rounded bg-black/40 px-1.5 py-0.5 font-mono text-zinc-300">
+                        ?screenshot=1
+                      </code>{" "}
+                      to auto-open the sample block for captures.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-amber-500/25 bg-amber-950/20 p-8 sm:p-10">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="flex gap-4">
+                        <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/15 text-amber-200">
+                          <Filter className="size-7" aria-hidden />
+                        </div>
+                        <div className="space-y-2">
+                          <h3 className="text-lg font-semibold text-white">
+                            No tracks match “{filterTabs.find((x) => x.id === filter)?.label}”
+                          </h3>
+                          <p className="max-w-lg text-sm leading-relaxed text-zinc-400">
+                            Try another filter, or use the sample layout below for a
+                            polished marketing capture without changing your data.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+                        <button
+                          type="button"
+                          onClick={() => setFilter("all")}
+                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-100"
+                        >
+                          Show all tracks
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowSampleLayout((v) => !v)}
+                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-medium text-zinc-200 transition hover:bg-white/10"
+                        >
+                          <Camera className="size-4" aria-hidden />
+                          {showSampleLayout ? "Hide sample layout" : "Show sample layout"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {showSampleLayout ? (
+                  <SampleDashboardPreview onDismiss={() => setShowSampleLayout(false)} />
+                ) : null}
+              </div>
             ) : (
               <ul className="space-y-4">
                 {filtered.map((track) => (
@@ -589,6 +799,132 @@ export default function Home() {
             )}
           </section>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SampleDashboardPreview({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-violet-500/25 bg-zinc-900/60 shadow-2xl shadow-violet-950/20">
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(139,92,246,0.08),transparent_45%,rgba(236,72,153,0.06))]" />
+      <div className="relative flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4 sm:px-6">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-violet-300/90">
+          <Camera className="size-4" aria-hidden />
+          Sample layout
+          <span className="font-normal normal-case text-zinc-500">
+            — not saved · for screenshots
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="pointer-events-auto rounded-lg border border-white/10 bg-zinc-950/80 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+        >
+          Dismiss
+        </button>
+      </div>
+
+      <div
+        className="pointer-events-none select-none space-y-6 p-5 opacity-[0.97] sm:p-6"
+        aria-hidden
+      >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            label="Total tracks"
+            value={8}
+            icon={Music2}
+            accent="from-violet-500/30 to-transparent"
+          />
+          <StatCard
+            label="Mixing"
+            value={2}
+            icon={Waves}
+            accent="from-cyan-500/25 to-transparent"
+          />
+          <StatCard
+            label="Ready"
+            value={3}
+            icon={Headphones}
+            accent="from-emerald-500/25 to-transparent"
+          />
+          <StatCard
+            label="Released"
+            value={1}
+            icon={Activity}
+            accent="from-fuchsia-500/25 to-transparent"
+          />
+        </div>
+
+        <ul className="space-y-4">
+          {SAMPLE_DASHBOARD_ROWS.map((row) => (
+            <li key={row.title}>
+              <div className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/50 shadow-lg shadow-black/25">
+                <div className="flex flex-col gap-4 p-5 sm:flex-row sm:justify-between">
+                  <div className="min-w-0 flex-1 space-y-3">
+                    <div className="flex flex-wrap items-start gap-2">
+                      <h3 className="truncate text-lg font-semibold text-white">
+                        {row.title}
+                      </h3>
+                      <StatusPill status={row.status} />
+                      <PriorityPill priority={row.priority} />
+                    </div>
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
+                      <div>
+                        <dt className="text-zinc-500">BPM</dt>
+                        <dd className="font-mono text-zinc-200">{row.bpm}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-zinc-500">Key</dt>
+                        <dd className="text-zinc-200">{row.key}</dd>
+                      </div>
+                      <div className="col-span-2 sm:col-span-2">
+                        <dt className="text-zinc-500">Genre</dt>
+                        <dd className="truncate text-zinc-200">{row.genre}</dd>
+                      </div>
+                    </dl>
+                    <p className="text-sm text-zinc-300">
+                      <span className="font-medium text-violet-300">Next: </span>
+                      {row.nextStep}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 gap-2 sm:flex-col sm:items-end">
+                    <div className="h-9 w-full rounded-lg border border-white/10 bg-zinc-900/80 sm:w-36" />
+                    <div className="h-9 w-full rounded-lg border border-white/10 bg-zinc-900/80 sm:w-36" />
+                  </div>
+                </div>
+                <div className="border-t border-white/10 bg-black/25 px-5 py-4">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                    Release checklist
+                  </p>
+                  <ul className="space-y-2">
+                    {row.checklistPreview.map((item) => (
+                      <li
+                        key={item.label}
+                        className="flex items-start gap-3 text-sm text-zinc-300"
+                      >
+                        {item.done ? (
+                          <CheckCircle2
+                            className="mt-0.5 size-4 shrink-0 text-emerald-400"
+                            aria-hidden
+                          />
+                        ) : (
+                          <Circle
+                            className="mt-0.5 size-4 shrink-0 text-zinc-600"
+                            aria-hidden
+                          />
+                        )}
+                        <span className={item.done ? "text-zinc-500 line-through" : ""}>
+                          {item.label}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
