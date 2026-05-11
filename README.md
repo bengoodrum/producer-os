@@ -2,7 +2,7 @@
 
 A **local-first** music producer workflow dashboard: track releases from idea to mastering, keep next steps visible, and run a per-track release checklist—without leaving the browser.
 
-![ProducerOS dashboard placeholder](docs/dashboard.svg)
+![ProducerOS dashboard placeholder](docs/dashboard.png)
 
 > **Screenshots:** Replace [`docs/dashboard.svg`](docs/dashboard.svg) with a PNG capture (e.g. `docs/dashboard.png`) when ready, or run the app and use **Show sample layout** / `?screenshot=1` for a framed preview. See [Screenshots](#screenshots).
 
