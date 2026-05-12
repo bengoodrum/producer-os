@@ -27,16 +27,6 @@ A **local-first** music producer workflow dashboard: track releases from idea to
 | Fonts        | [Geist](https://vercel.com/font) (via `next/font`) |
 | Data         | Browser `localStorage` (no backend in MVP) |
 
-## Screenshots
-
-Place exported images under `docs/` and link them here.
-
-| View | File |
-| ---- | ---- |
-| Main dashboard (placeholder) | ![ProducerOS Dashboard](docs/dashboard.png) |
-
-**Tip:** With an empty library, open [http://localhost:3000/?screenshot=1](http://localhost:3000/?screenshot=1) and the app will expand the **sample layout** block—good for a full-width capture without adding fake data to storage. You can also use **Show sample layout** in the empty state at any time.
-
 ## Why I built it
 
 I wanted a **single surface** that mirrors how I actually finish records: status and priority are easy to neglect when they live in notes apps or DAW project names. ProducerOS keeps **next steps** and a **release checklist** attached to each track, uses **dark, low-noise UI** for late-night sessions, and stays **offline-friendly** with local persistence—no accounts or cloud required for the MVP.
@@ -45,11 +35,8 @@ I wanted a **single surface** that mirrors how I actually finish records: status
 
 - **Accounts & sync** — Optional cloud backup and multi-device sync.
 - **Due dates & reminders** — Release targets and calendar export.
-- **Attachments** — Link references, stems, or mastering revisions per track.
 - **Collaborators** — Shared projects with roles and split reminders.
 - **Keyboard shortcuts** — Quick add, filter, and navigate without the mouse.
-- **Import / export** — JSON backup for migrations and version control.
-- **Theming** — Light mode and custom accent colors.
 
 ## Getting started
 
@@ -65,7 +52,3 @@ npm run build   # production build
 npm run start   # run production server
 npm run lint    # ESLint
 ```
-
-## License
-
-Private / your choice — update this section when you publish.
